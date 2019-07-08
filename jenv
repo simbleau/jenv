@@ -1,0 +1,96 @@
+#!/bin/bash
+
+## Print out the environment this terminal is working in for java 
+##
+## @author Spencer Imbleau
+## @version July 2019
+
+# Print usage for the program
+print_usage() {
+	echo "Usage: \"jenv\""
+	exit 1
+}
+
+# Check if the bin (classpath) directory exists
+# 
+# @params $1 - the path of the classpath folder
+# @returns 0 if the bin folder exists
+# @returns 1 if $CLASSPATH is null
+# @returns 2 if $CLASSPATH is not a directory
+# @retuens 3 if $CLASSPATH is not named bin
+check_classpath() {
+	# Check if CLASSPATH is empty
+	if [ -z $1 ]
+	then
+		return 1
+	fi
+	# Check if CLASSPATH is a directory
+	if [ ! -d $1 ]
+	then
+		return 2
+	fi
+	# Check if CLASSPATH is named 'bin' conventionally
+	if [ "${1: -4}" != "/bin" ]
+	then
+		return 3
+	fi
+	return 0
+}
+
+# Check if the source directory exists
+# 
+# @params $1 - the path of the source folder
+# @returns 0 if the source folder exists, 1 otherwise
+check_source_path() {
+	# Check if source path is a directory
+	if [ ! -d $1 ]
+	then
+		return 1
+	fi
+	return 0
+}
+
+# Check more than 1 argument was passed
+if [ $# -gt 0 ]
+then
+	print_usage
+fi
+
+
+# Index environment locations
+STRUCTURE_PATH=$(realpath $CLASSPATH/..)
+SOURCE_PATH=$(realpath $STRUCTURE_PATH/src)
+
+check_classpath $CLASSPATH
+bin_return=$?
+
+check_source_path $SOURCE_PATH
+src_return=$?
+
+if [ $bin_return -ne 0 ]
+then
+	echo "[ERR] CLASSPATH: '$CLASSPATH' ($bin_return)"
+	if [ $bin_return -eq 1 ]; then echo "--> CLASSPATH is not set."; fi
+	if [ $bin_return -eq 2 ]; then echo "--> CLASSPATH is not a directory."; fi
+	if [ $bin_return -eq 3 ]; then echo "--> CLASSPATH is not named 'bin' conventionally."; fi
+	exit 1
+else
+	echo "[OK] CLASSPATH: $CLASSPATH"
+fi
+if [ $src_return -ne 0 ]
+then
+	echo "[ERR] SOURCE: '$SOURCE_PATH' ($src_return)"
+	if [ $src_return -eq 1 ]; then echo "--> source folder does not exist."; fi
+	exit 1
+else
+	echo "[OK] SOURCE: $SOURCE_PATH"
+fi
+if [ $bin_return -eq 0 ] && [ $src_return -eq 0 ]
+then
+	echo "[OK] ROOT: '$STRUCTURE_PATH'"
+	echo "All good to go!"
+else
+	echo "[ERR] '$STRUCTURE_PATH' is not a valid root directory for a java project."
+	exit 1
+fi
+

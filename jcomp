@@ -1,0 +1,96 @@
+#!/bin/bash
+
+## This file will compile all java files found in a source folder.
+##
+## @author Spencer Imbleau
+## @version July 2019
+
+# Check the classpath was set and exists
+if [ -z '$CLASSPATH' ]
+then
+	echo "CLASSPATH not set. Exiting..."
+	exit 1
+fi
+
+# Index needed locations
+STRUCTURE_PATH=$(realpath $CLASSPATH/..)
+SOURCE_PATH=$(realpath $CLASSPATH/../src)
+BIN_PATH=$(realpath $CLASSPATH)
+
+# Check that our classpath folder is named 'bin'
+if [ ! ${BIN_PATH: -4} == "/bin" ]
+then
+	echo "$BIN_PATH must be a folder named bin."
+	echo "You should initiate jsrc on your source folder or set your classpath."
+	exit 1
+fi
+
+# Check there exists a /src/ directory to compile java files from
+if [ ! -d $SOURCE_PATH ]
+then
+	echo -n "$SOURCE_PATH does not exist. Create it now? (y/N) > "
+	
+	# Create 
+	read -n1 input
+	echo ""
+	if [ $input == "y" ] || [ $input == "Y" ]
+	then
+		echo "Creating $SOURCE_PATH"
+		mkdir $SOURCE_PATH
+		if [ $? -ne 0 ]
+		then
+			echo "Could not create $SOURCE_PATH. Privilege error."
+			exit 1
+		fi
+	else
+		echo "You must obey standard conventions to use this program."
+		exit 1
+	fi
+fi
+
+# Check there exists a /bin/ directory to export the .class files 
+if [ ! -d $BIN_PATH ] 
+then
+	echo -n "$BIN_PATH does not exist. Create one now? (y/N) > "
+	
+	# Create 
+	read -n1 input
+	echo ""
+	if [ $input == "y" ] || [ $input == "Y" ]
+	then
+		echo "Creating $BIN_PATH"
+		mkdir $BIN_PATH
+		if [ $? -ne 0 ]
+		then
+			echo "Could not create $BIN_PATH. Privilege error."
+			exit 1
+		fi
+	else
+		echo "You must obey standard conventions to use this program."
+		exit 1
+	fi
+fi
+
+## Gather any java files within the classpath
+list=$(find $SOURCE_PATH -name "*.java")
+
+if [ -z "$list" ]
+then
+	echo "No source files to compile. Check your classpath is accurately set?"
+	echo "ROOT: $STRUCTURE_PATH"
+	echo "SOURCE: $SOURCE_PATH"
+	echo "CLASSPATH: $BIN_PATH"
+else 
+	echo "ROOT: $STRUCTURE_PATH"
+	echo "SOURCE: $SOURCE_PATH"
+	echo "CLASSPATH: $BIN_PATH"
+	echo "File list:"
+	echo "$(echo $list | tr ' ' '\n')"
+	echo "Compiling..."
+	javac -d $BIN_PATH $list
+	echo "...Complete!"
+fi
+
+exit 0
+
+

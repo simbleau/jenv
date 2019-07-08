@@ -1,0 +1,102 @@
+#!/bin/bash
+
+## Ensure that proper conventions are setup, i.e. that the user has
+## a valid source folder (named 'src') and a binary folder (named 'bin')
+## which can be used to set the classpath.
+##
+## @author Spencer Imbleau
+## @version July 2019
+
+# Print usage for the program
+print_usage() {
+	echo "Usage: \". jsrc <source_path>\""
+	return 1
+}
+
+# Checks for the source path
+#
+# @params $1 - the source path to check
+# @returns 0 if the source path exists, 1 otherwise
+check_source_path() {
+	#Check if source path is a directory 
+	if [ ! -d $1 ]
+	then
+		echo "$1 is not a directory."
+		print_usage
+		return 1
+	fi
+	
+	if [ "${1: -4}" != "/src" ]
+	then
+		echo "$1 must be a folder named src."
+		echo "You should initiate jsrc on your source folder."
+		return 1
+	fi
+
+	return 0
+}
+
+# Checks for the bin path
+#
+# @params $1 - the bin path to check	
+# @returns 0 if the bin path exists, 1 otherwise
+check_bin_path() {
+	# Check if bin path does not exist
+	if [ ! -d $BIN_PATH ]
+	then
+		echo -n "$BIN_PATH does not exist. Create it now? (y/N) > "
+	
+		#Create bin directory on request
+		read -n1 input
+		echo ""
+		if [ $input == "y" ] || [ $input == "Y" ]
+		then
+			echo "Creating $BIN_PATH"
+			mkdir $BIN_PATH
+			if [ $? -ne 0 ] # Check for mkdir success
+			then
+				echo "Could not create $BIN_PATH. Privilege error."
+				return 1
+			fi
+		else
+			echo "You must obey standard conventions to use this program."
+			return 1
+		fi
+	fi
+
+	return 0
+}
+
+# Check more than 1 argument was passed
+if [ $# -gt 1 ]
+then
+	print_usage
+else
+	# Index important locations
+	if [ "$#" -eq 0 ] # Check if a source path was passed
+	then # No arguments were passed
+		SOURCE_PATH=$(realpath .)
+	else # 1 argument
+		SOURCE_PATH=$(realpath $1)
+	fi
+	STRUCTURE_PATH=$(realpath ..)
+	BIN_PATH=$(realpath ${SOURCE_PATH}/../bin)
+	
+	check_source_path $SOURCE_PATH
+       	src_exists=$?
+	if [ $src_exists -eq 0 ]
+	then
+		check_bin_path $BIN_PATH
+		bin_exists=$? 
+		if [ $bin_exists -eq 0 ]
+		then
+			export CLASSPATH=$BIN_PATH
+			echo "ROOT: $STRUCTURE_PATH"
+			echo "SOURCE: $SOURCE_PATH"
+			echo "CLASSPATH: $CLASSPATH"
+			echo "... Complete!"
+		fi
+	fi
+fi 
+
+
