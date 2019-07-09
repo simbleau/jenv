@@ -18,10 +18,8 @@ check_bin_path() {
 	# Check if classpath was set
 	if [ -z '$CLASSPATH' ]
 	then
-		echo "[ERROR] CLASSPATH not set."
+		echo "[ERROR] CLASSPATH is null."
 		return 1
-	else
-		return 0
 	fi
 	
 	BIN_PATH=$(realpath $CLASSPATH 2> /dev/null)
@@ -42,7 +40,7 @@ check_bin_path() {
 		echo ""
 		if [ $input == "y" ] || [ $input == "Y" ]
 		then
-			mkdir $BIN_PATH
+			mkdir $BIN_PATH 2> /dev/null
 			if [ $? -ne 0 ]
 			then
 				echo "[ERROR] Could not create $BIN_PATH. Privilege error."
@@ -72,7 +70,7 @@ check_source_path() {
 		echo ""
 		if [ $input == "y" ] || [ $input == "Y" ]
 		then
-			mkdir $SOURCE_PATH
+			mkdir $SOURCE_PATH 2> /dev/null
 			if [ $? -ne 0 ]
 			then
 				echo "[ERROR] Could not create $SOURCE_PATH. Privilege error."
