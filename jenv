@@ -8,17 +8,17 @@
 # Print usage for the program
 print_usage() {
 	echo "Usage: \"jenv\""
-	exit 1
+	return 1
 }
 
 # Check if the bin (classpath) directory exists
 # 
-# @params $1 - the path of the classpath folder
-# @returns 0 if the bin folder exists
+# @params $1 - the path of a bin/classpath folder
+# @returns 0 if the classpath directory exists conventionally
 # @returns 1 if $CLASSPATH is null
 # @returns 2 if $CLASSPATH is not a directory
-# @retuens 3 if $CLASSPATH is not named bin
-check_classpath() {
+# @returns 3 if $CLASSPATH is not named bin
+check_bin_path() {
 	# Check if CLASSPATH is empty
 	if [ -z $1 ]
 	then
@@ -37,9 +37,9 @@ check_classpath() {
 	return 0
 }
 
-# Check if the source directory exists
+# Check if a source directory exists
 # 
-# @params $1 - the path of the source folder
+# @params $1 - the path of a source folder
 # @returns 0 if the source folder exists, 1 otherwise
 check_source_path() {
 	# Check if source path is a directory
@@ -50,47 +50,77 @@ check_source_path() {
 	return 0
 }
 
-# Check more than 1 argument was passed
-if [ $# -gt 0 ]
-then
-	print_usage
-fi
+# Entry point of the program
+# 
+# @params $@ - the command line arguments
+# @returns 0 if the program executed successfully, 1 otherwise
+main() {
+	# Check 0 args was passed
+	if [ $# -ne 0 ]
+	then
+		print_usage
+		return 1
+	fi
 
+	# Program can start! Proper usage.
+	# --------------------------------
 
-# Index environment locations
-STRUCTURE_PATH=$(realpath $CLASSPATH/..)
-SOURCE_PATH=$(realpath $STRUCTURE_PATH/src)
+	# Index important locations
+	STRUCTURE_PATH=$(realpath $CLASSPATH/.. 2> /dev/null)
+	SOURCE_PATH=$(realpath $STRUCTURE_PATH/src 2> /dev/null)
+	BIN_PATH=$(realpath $CLASSPATH 2> /dev/null)
+	
+	check_bin_path $BIN_PATH
+	bin_return=$?
 
-check_classpath $CLASSPATH
-bin_return=$?
+	check_source_path $SOURCE_PATH
+	src_return=$?
+	
 
-check_source_path $SOURCE_PATH
-src_return=$?
+	# Display results
+	# Display Classpath results
+	if [ $bin_return -ne 0 ]
+	then
+		echo "[ERROR] CLASSPATH: '$CLASSPATH'"
+		if [ $bin_return -eq 1 ]; then echo "--> CLASSPATH is not set."; fi
+		if [ $bin_return -eq 2 ]; then echo "--> CLASSPATH is not a directory."; fi
+		if [ $bin_return -eq 3 ]; then echo "--> CLASSPATH is not named 'bin' conventionally."; fi
+		return 1
+	else
+		echo "[OK] CLASSPATH: '$CLASSPATH'"
+	fi
 
-if [ $bin_return -ne 0 ]
-then
-	echo "[ERR] CLASSPATH: '$CLASSPATH' ($bin_return)"
-	if [ $bin_return -eq 1 ]; then echo "--> CLASSPATH is not set."; fi
-	if [ $bin_return -eq 2 ]; then echo "--> CLASSPATH is not a directory."; fi
-	if [ $bin_return -eq 3 ]; then echo "--> CLASSPATH is not named 'bin' conventionally."; fi
-	exit 1
-else
-	echo "[OK] CLASSPATH: $CLASSPATH"
-fi
-if [ $src_return -ne 0 ]
-then
-	echo "[ERR] SOURCE: '$SOURCE_PATH' ($src_return)"
-	if [ $src_return -eq 1 ]; then echo "--> source folder does not exist."; fi
-	exit 1
-else
-	echo "[OK] SOURCE: $SOURCE_PATH"
-fi
-if [ $bin_return -eq 0 ] && [ $src_return -eq 0 ]
-then
-	echo "[OK] ROOT: '$STRUCTURE_PATH'"
+	# Display Source results
+	if [ $src_return -ne 0 ]
+	then
+		echo "[ERROR] SOURCE: '$SOURCE_PATH'"
+		if [ $src_return -eq 1 ]; then echo "--> source folder does not exist."; fi
+		return 1
+	else
+		echo "[OK] SOURCE: '$SOURCE_PATH'"
+	fi
+
+	# Display Summary Results
+	if [ $bin_return -eq 0 ] && [ $src_return -eq 0 ]
+	then
+		echo "[OK] ROOT: '$STRUCTURE_PATH'"
+	else
+		echo "[ERROR] '$STRUCTURE_PATH' is not a valid root directory for a java project."
+		return 1
+	fi
+}
+
+# Start the program
+main $@
+
+# Check if the program ran successfully
+if [ $? -eq 0 ]
+then 
 	echo "All good to go!"
 else
-	echo "[ERR] '$STRUCTURE_PATH' is not a valid root directory for a java project."
-	exit 1
+	echo "Errors occurred. See details above."
 fi
+
+
+
 

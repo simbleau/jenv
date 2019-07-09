@@ -9,7 +9,7 @@
 
 # Print usage for the program
 print_usage() {
-	echo "Usage: \". jsrc <source_path>\""
+	echo "Usage: \"source jsrc <source_path>\""
 	return 1
 }
 
@@ -21,15 +21,15 @@ check_source_path() {
 	#Check if source path is a directory 
 	if [ ! -d $1 ]
 	then
-		echo "$1 is not a directory."
 		print_usage
+		echo "[ERROR] $1 is not a directory."
 		return 1
 	fi
 	
 	if [ "${1: -4}" != "/src" ]
 	then
-		echo "$1 must be a folder named src."
-		echo "You should initiate jsrc on your source folder."
+		echo "[ERROR] $1 must be a folder named src."
+		echo "--> You should initiate jsrc on your source folder."
 		return 1
 	fi
 
@@ -55,11 +55,11 @@ check_bin_path() {
 			mkdir $BIN_PATH
 			if [ $? -ne 0 ] # Check for mkdir success
 			then
-				echo "Could not create $BIN_PATH. Privilege error."
+				echo "[ERROR] Could not create $BIN_PATH. Privilege error."
 				return 1
 			fi
 		else
-			echo "You must obey standard conventions to use this program."
+			echo "[ERROR] You must obey standard conventions to use this program."
 			return 1
 		fi
 	fi
@@ -67,36 +67,83 @@ check_bin_path() {
 	return 0
 }
 
-# Check more than 1 argument was passed
-if [ $# -gt 1 ]
-then
-	print_usage
-else
-	# Index important locations
+# Checks if the program being called is sourced
+#
+# @returns 0 if the program is sourced, 1 otherwise 
+check_program_sourced() {
+	if [[ "${BASH_SOURCE[0]}" != "${0}" ]]
+	then
+		return 0
+	else
+		print_usage
+		return 1
+	fi
+}
+
+# Start of the program (functioned)
+#
+# @params $@ - the command line arguments	
+# @returns 0 if the program executed successfully, 1 otherwise
+main() {
+	# Check <= 1 args passed
+	if [ $# -gt 1 ]
+	then
+		print_usage
+		return 1
+	fi
+	
+	# Check if the program is sourced
+	check_program_sourced
+	if [ $? -ne 0 ]
+	then
+		return 1
+	fi
+
+	# Program can start! Proper usage.
+	# --------------------------------
+
+	# Index environment locations
 	if [ "$#" -eq 0 ] # Check if a source path was passed
 	then # No arguments were passed
-		SOURCE_PATH=$(realpath .)
+		SOURCE_PATH=$(realpath . 2> /dev/null)
 	else # 1 argument
-		SOURCE_PATH=$(realpath $1)
+		SOURCE_PATH=$(realpath $1 2> /dev/null)
 	fi
-	STRUCTURE_PATH=$(realpath ..)
-	BIN_PATH=$(realpath ${SOURCE_PATH}/../bin)
+	STRUCTURE_PATH=$(realpath ${SOURCE_PATH}/.. 2> /dev/null)
+	BIN_PATH=$(realpath ${SOURCE_PATH}/../bin 2> /dev/null)
 	
+	# Check for a valid source path
 	check_source_path $SOURCE_PATH
        	src_exists=$?
-	if [ $src_exists -eq 0 ]
+	if [ $src_exists -ne 0 ]
 	then
-		check_bin_path $BIN_PATH
-		bin_exists=$? 
-		if [ $bin_exists -eq 0 ]
-		then
-			export CLASSPATH=$BIN_PATH
-			echo "ROOT: $STRUCTURE_PATH"
-			echo "SOURCE: $SOURCE_PATH"
-			echo "CLASSPATH: $CLASSPATH"
-			echo "... Complete!"
-		fi
+		return 1
 	fi
+
+	# Check for a valid bin path
+	check_bin_path $BIN_PATH
+	bin_exists=$? 
+	if [ $bin_exists -ne 0 ]
+	then
+		return 1
+	fi
+
+	export CLASSPATH=$BIN_PATH
+	return 0
+} 
+
+# Start the program
+main $@
+
+# Check if the program ran succesfully
+if [ $? -eq 0 ]
+then
+	echo "ROOT: $STRUCTURE_PATH"
+	echo "SOURCE: $SOURCE_PATH"
+	echo "CLASSPATH: $CLASSPATH"
+	echo "...Complete!"
+else
+	echo "Error occurred. See details above."
 fi 
 
 

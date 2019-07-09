@@ -5,92 +5,167 @@
 ## @author Spencer Imbleau
 ## @version July 2019
 
+# Print usage for the program
+print_usage() {
+	echo "Usage: \"jcomp\""
+	return 1
+}
+
 # Check the classpath was set and exists
-if [ -z '$CLASSPATH' ]
-then
-	echo "CLASSPATH not set. Exiting..."
-	exit 1
-fi
-
-# Index needed locations
-STRUCTURE_PATH=$(realpath $CLASSPATH/..)
-SOURCE_PATH=$(realpath $CLASSPATH/../src)
-BIN_PATH=$(realpath $CLASSPATH)
-
-# Check that our classpath folder is named 'bin'
-if [ ! ${BIN_PATH: -4} == "/bin" ]
-then
-	echo "$BIN_PATH must be a folder named bin."
-	echo "You should initiate jsrc on your source folder or set your classpath."
-	exit 1
-fi
-
-# Check there exists a /src/ directory to compile java files from
-if [ ! -d $SOURCE_PATH ]
-then
-	echo -n "$SOURCE_PATH does not exist. Create it now? (y/N) > "
-	
-	# Create 
-	read -n1 input
-	echo ""
-	if [ $input == "y" ] || [ $input == "Y" ]
+#
+# @returns 0 if $CLASSPATH was set and exists conventionally, 1 otherwise
+check_bin_path() {
+	# Check if classpath was set
+	if [ -z '$CLASSPATH' ]
 	then
-		echo "Creating $SOURCE_PATH"
-		mkdir $SOURCE_PATH
-		if [ $? -ne 0 ]
-		then
-			echo "Could not create $SOURCE_PATH. Privilege error."
-			exit 1
-		fi
+		echo "[ERROR] CLASSPATH not set."
+		return 1
 	else
-		echo "You must obey standard conventions to use this program."
-		exit 1
+		return 0
 	fi
-fi
-
-# Check there exists a /bin/ directory to export the .class files 
-if [ ! -d $BIN_PATH ] 
-then
-	echo -n "$BIN_PATH does not exist. Create one now? (y/N) > "
 	
-	# Create 
-	read -n1 input
-	echo ""
-	if [ $input == "y" ] || [ $input == "Y" ]
+	BIN_PATH=$(realpath $CLASSPATH 2> /dev/null)
+	
+	# Check that our classpath is named 'bin'
+	if [ ! ${BIN_PATH: -4} == "/bin" ]
 	then
-		echo "Creating $BIN_PATH"
-		mkdir $BIN_PATH
-		if [ $? -ne 0 ]
-		then
-			echo "Could not create $BIN_PATH. Privilege error."
-			exit 1
-		fi
-	else
-		echo "You must obey standard conventions to use this program."
-		exit 1
+		echo "[ERROR] $BIN_PATH must be a folder named bin. You should initiate jsrc on your source folder."
+		return 1
 	fi
-fi
 
-## Gather any java files within the classpath
-list=$(find $SOURCE_PATH -name "*.java")
+	# Check that the classpath is a directory 
+	if [ ! -d $BIN_PATH ] 
+	then
+		echo -n "$BIN_PATH does not exist. Create one now? (y/N) > "
+		# Create 
+		read -n1 input
+		echo ""
+		if [ $input == "y" ] || [ $input == "Y" ]
+		then
+			mkdir $BIN_PATH
+			if [ $? -ne 0 ]
+			then
+				echo "[ERROR] Could not create $BIN_PATH. Privilege error."
+				return 1
+			fi
+		else
+			echo "[ERROR] You must obey standard conventions to use this program."
+			return 1
+		fi
+	fi
 
-if [ -z "$list" ]
+	return 0
+}
+
+
+# Check the source directory exists
+#
+# @returns 0 if the conventional source directory exists, 1 otherwise
+check_source_path() {
+	SOURCE_PATH=$(realpath $CLASSPATH/../src 2> /dev/null)
+	# Check there exists a /src/ directory to compile java files from
+	if [ ! -d $SOURCE_PATH ]
+	then
+		# Ask user to create 
+		echo -n "$SOURCE_PATH does not exist. Create it now? (y/N) > "
+		read -n1 input
+		echo ""
+		if [ $input == "y" ] || [ $input == "Y" ]
+		then
+			mkdir $SOURCE_PATH
+			if [ $? -ne 0 ]
+			then
+				echo "[ERROR] Could not create $SOURCE_PATH. Privilege error."
+				return 1
+			fi
+		else
+			echo "[ERROR] You must obey standard conventions to use this program."
+			return 1
+		fi
+	fi
+
+	return 0
+}
+
+# Compile the source code from the src directory into the java byte code 
+# into the bin directory
+#
+# @returns 0 if successful, 1 otherwise
+compile() {
+	STRUCTURE_PATH=$(realpath $CLASSPATH/.. 2> /dev/null)
+	SOURCE_PATH=$(realpath $CLASSPATH/../src 2> /dev/null)
+	BIN_PATH=$(realpath $CLASSPATH 2> /dev/null)
+
+	## Gather any java files within the source directory
+	list=$(find $SOURCE_PATH -name "*.java")
+	
+	if [ -z "$list" ]
+	then
+		echo "[ERROR] No source files to compile."
+		echo "--> ROOT: $STRUCTURE_PATH"
+		echo "--> SOURCE: $SOURCE_PATH"
+		echo "--> CLASSPATH: $BIN_PATH"
+		return 1
+	else 
+		echo "ROOT: $STRUCTURE_PATH"
+		echo " > SOURCE: $SOURCE_PATH"
+		echo " > CLASSPATH: $BIN_PATH"
+		echo "Files:"
+		echo "$(echo $list | tr ' ' '\n' | sed 's/^/ > /')"
+		echo "Compiling..."
+		javac -d $BIN_PATH $list 
+		if [ $? -eq 0 ] 
+		then
+			return 0
+		else
+			return 1
+		fi
+	fi
+}
+
+# Entry point of the program
+#
+# @params $@ - the command line arguments
+# @returns 0 if the program executed successfully, 1 otherwise
+main() {
+	# Check 0 args passed
+	if [ $# -ne 0 ]
+	then
+		print_usage
+		return 1
+	fi
+
+	# Check the binary (classpath) directory
+	check_bin_path
+	if [ $? -ne 0 ]
+	then
+		return 1
+	fi
+	
+	# Check the source directory
+	check_source_path
+	if [ $? -ne 0 ]
+	then
+		return 1
+	fi
+	
+	# Compile the source into the binary directory
+	compile
+	if [ $? -eq 0 ]
+	then
+		return 0
+	else
+		return 1
+	fi
+}
+
+# Start the program
+main $@
+
+# Check if the program ran successfully
+if [ $? -eq 0 ]
 then
-	echo "No source files to compile. Check your classpath is accurately set?"
-	echo "ROOT: $STRUCTURE_PATH"
-	echo "SOURCE: $SOURCE_PATH"
-	echo "CLASSPATH: $BIN_PATH"
-else 
-	echo "ROOT: $STRUCTURE_PATH"
-	echo "SOURCE: $SOURCE_PATH"
-	echo "CLASSPATH: $BIN_PATH"
-	echo "File list:"
-	echo "$(echo $list | tr ' ' '\n')"
-	echo "Compiling..."
-	javac -d $BIN_PATH $list
 	echo "...Complete!"
+else
+	echo "Errors ocurred. See details above."
 fi
-
-exit 0
-
-
