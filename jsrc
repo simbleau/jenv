@@ -51,7 +51,6 @@ check_bin_path() {
 		echo ""
 		if [ $input == "y" ] || [ $input == "Y" ]
 		then
-			echo "Creating $BIN_PATH"
 			mkdir $BIN_PATH 2> /dev/null
 			if [ $? -ne 0 ] # Check for mkdir success
 			then

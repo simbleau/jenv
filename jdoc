@@ -67,14 +67,14 @@ check_doc_path() {
 	return 0
 }
 
-
+# Compiles javadoc
+#
+# @returns 0 if the conventional javadoc directory exists, 1 otherwise
 compile() {
 	STRUCTURE_PATH=$(realpath $CLASSPATH/.. 2> /dev/null)
 	DOC_PATH=$(realpath $CLASSPATH/../doc 2> /dev/null)
-	SOURCE_PATH=$(realpath $CLASSPATH/../src 2> /dev/null)
-
-	cd $SOURCE_PATH
-	directories=$(find * -type d)
+	SOURCE_PATH=$(realpath $CLASSPATH/../src) #2> /dev/null)
+	directories=$(find $SOURCE_PATH/* -type d | sed 's,'"$SOURCE_PATH/"',,g')
 	if [ -z '$directories' ] 
 	then
 		echo "[ERROR] No source files to javadoc."
