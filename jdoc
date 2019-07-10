@@ -11,10 +11,10 @@ print_usage() {
 	return 1
 }
 
-# Checks for the source path
+# Check the classpath was set and exists
 #
-# @returns 0 if the conventional source directory exists, 1 otherwise
-check_source_path() {
+# @returns 0 if $CLASSPATH was set and exists conventionally, 1 otherwise
+check_classpath() {
 	# Check if classpath was set
 	if [ -z '$CLASSPATH' ]
 	then
@@ -23,6 +23,24 @@ check_source_path() {
 		return 1
 	fi
 
+	CLASSPATH_PATH=$(realpath $CLASSPATH 2> /dev/null)
+
+	# Check that the classpath is a directory 
+	if [ ! -d $CLASSPATH_PATH ] 
+	then
+		echo "[ERROR] '$CLASSPATH_PATH' is not a valid classpath directory."
+		echo "--> You should initiate jsrc on your source directory."
+		return 1
+	fi
+
+	return 0
+}
+
+
+# Checks for the source path
+#
+# @returns 0 if the conventional source directory exists, 1 otherwise
+check_source_path() {
 	SOURCE_PATH=$(realpath $CLASSPATH/../src 2> /dev/null)
 	
 	# Check that source path exists and is a directory
@@ -89,6 +107,15 @@ compile() {
 		echo "Subpackages:"
 		subpackages=$(echo $directories | sed 's/\//./g')
 		echo $subpackages | tr ' ' '\n' | sed 's/^/ > /'
+		echo "Cleaning JavaDoc..."
+		#rm -rf $DOC_PATH/* 
+		echo "rm -rf $DOC_PATH/*"
+		if [ $? -ne 0 ]
+		then
+			echo "[ERROR] Could not clean JavaDoc directory."
+			echo "--> You may not have sufficient privileges to $DOC_PATH."
+			return 1
+		fi
 		echo "Generating JavaDoc..."
 		javadoc -sourcepath $SOURCE_PATH -d $DOC_PATH -subpackages $subpackages	
 		if [ $? -eq 0 ]
@@ -111,6 +138,13 @@ main() {
 		print_usage
 		return 1
 	fi 
+
+	# Check the classpath 
+	check_classpath
+	if [ $? -ne 0 ]
+	then
+		return 1
+	fi
 
 	# Check the source directory
 	check_source_path
