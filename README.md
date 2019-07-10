@@ -17,7 +17,7 @@ Source Directory: \
 Classpath (Binary) Directory: \
 .../root_dir/bin/		\
 Documentation Directory: \
-.../root__dir/doc/  \
+.../root__dir/doc/
 
 
 Essentially, every project folder must have a 'src' (source) folder and a 'bin'
