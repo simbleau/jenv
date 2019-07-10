@@ -11,14 +11,15 @@ because I insist that every Java project be handled properly and conventionally.
 The structure you must obey is as follow:
 ...\
 Project Directory: \
-.../root_dir/			
+.../root_dir/			\
 Source Directory: \
-.../root_dir/src/		
+.../root_dir/src/		\
 Classpath (Binary) Directory: \
-.../root_dir/bin/		
+.../root_dir/bin/		\
 Documentation Directory: \
-.../root__dir/doc\
-\
+.../root__dir/doc/  \
+
+
 Essentially, every project folder must have a 'src' (source) folder and a 'bin'
 (binary) export folder. The bin folder will be where java class files are 
 generated on compilation, and the src folder is where java source files must 
