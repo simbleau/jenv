@@ -19,6 +19,7 @@ check_bin_path() {
 	if [ -z '$CLASSPATH' ]
 	then
 		echo "[ERROR] CLASSPATH is null."
+		echo "--> You should initiate jsrc on your source directory."
 		return 1
 	fi
 	
@@ -27,14 +28,15 @@ check_bin_path() {
 	# Check that our classpath is named 'bin'
 	if [ ! ${BIN_PATH: -4} == "/bin" ]
 	then
-		echo "[ERROR] $BIN_PATH must be a folder named bin. You should initiate jsrc on your source folder."
+		echo "[ERROR] Your CLASSPATH, '$BIN_PATH', must be a folder named bin."
+		echo "--> You should initiate jsrc on your source directory."
 		return 1
 	fi
 
 	# Check that the classpath is a directory 
 	if [ ! -d $BIN_PATH ] 
 	then
-		echo -n "$BIN_PATH does not exist. Create one now? (y/N) > "
+		echo -n "$BIN_PATH does not exist. Create it now? (y/N) > "
 		# Create 
 		read -n1 input
 		echo ""
@@ -43,7 +45,8 @@ check_bin_path() {
 			mkdir $BIN_PATH 2> /dev/null
 			if [ $? -ne 0 ]
 			then
-				echo "[ERROR] Could not create $BIN_PATH. Privilege error."
+				echo "[ERROR] Could not create $BIN_PATH."
+				echo "--> You may not have sufficient privileges or $BIN_PATH could already exist as a file."
 				return 1
 			fi
 		else
@@ -73,7 +76,8 @@ check_source_path() {
 			mkdir $SOURCE_PATH 2> /dev/null
 			if [ $? -ne 0 ]
 			then
-				echo "[ERROR] Could not create $SOURCE_PATH. Privilege error."
+				echo "[ERROR] Could not create $SOURCE_PATH."
+				echo "--> You may not have sufficient privileges or $SOURCE_PATH could already exist as a file."
 				return 1
 			fi
 		else

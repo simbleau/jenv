@@ -28,8 +28,8 @@ check_source_path() {
 	
 	if [ "${1: -4}" != "/src" ]
 	then
-		echo "[ERROR] $1 must be a folder named src."
-		echo "--> You should initiate jsrc on your source folder."
+		echo "[ERROR] $1 must be a directory named src."
+		echo "--> You should initiate jsrc on your source directory."
 		return 1
 	fi
 
@@ -52,10 +52,10 @@ check_bin_path() {
 		if [ $input == "y" ] || [ $input == "Y" ]
 		then
 			echo "Creating $BIN_PATH"
-			mkdir $BIN_PATH
+			mkdir $BIN_PATH 2> /dev/null
 			if [ $? -ne 0 ] # Check for mkdir success
 			then
-				echo "[ERROR] Could not create $BIN_PATH. Privilege error."
+				echo "[ERROR] Could not create $BIN_PATH."
 				return 1
 			fi
 		else

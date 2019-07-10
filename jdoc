@@ -1,0 +1,149 @@
+#!/bin/bash
+
+## Generate javadoc for all source files and store them conventionally
+##
+## @author Spencer Imbleau
+## @version July 2019
+
+# Print usage for the program
+print_usage() {
+	echo "Usage: \"jdoc\""
+	return 1
+}
+
+# Checks for the source path
+#
+# @returns 0 if the conventional source directory exists, 1 otherwise
+check_source_path() {
+	# Check if classpath was set
+	if [ -z '$CLASSPATH' ]
+	then
+		echo "[ERROR] CLASSPATH is null."
+		echo "--> You should initiate jsrc on your source directory."
+		return 1
+	fi
+
+	SOURCE_PATH=$(realpath $CLASSPATH/../src 2> /dev/null)
+	
+	# Check that source path exists and is a directory
+	if [ ! -d $SOURCE_PATH ]
+	then
+		echo "[ERROR] '$SOURCE_PATH' is not a valid source directory."
+		echo "--> You should initiate jsrc on your source directory."
+		return 1
+	fi
+
+	return 0
+}
+
+# Checks for the javadoc path
+#
+# @returns 0 if the conventional javadoc directory exists, 1 otherwise
+check_doc_path() {
+	DOC_PATH=$(realpath $CLASSPATH/../doc 2> /dev/null)
+
+	# Check that doc is a directory
+	if [ ! -d $DOC_PATH ]
+	then
+		echo -n "$DOC_PATH does not exist. Create it now? (y/N) > "
+		#Create
+		read -n1 input
+		echo ""
+		if [ $input == "y" ] || [ $input == "Y" ]
+		then
+			mkdir $DOC_PATH 2> /dev/null
+			if [ $? -ne 0 ]
+			then
+				echo "[ERROR] Could not create $DOC_PATH."
+				echo "--> You may not have sufficient privileges or $DOC_PATH could already exist as a file."
+				return 1
+			fi
+		else
+			echo "[ERROR] You must obey standard conventions to use this program."
+			return 1
+		fi	
+	fi
+	
+	return 0
+}
+
+
+compile() {
+	STRUCTURE_PATH=$(realpath $CLASSPATH/.. 2> /dev/null)
+	DOC_PATH=$(realpath $CLASSPATH/../doc 2> /dev/null)
+	SOURCE_PATH=$(realpath $CLASSPATH/../src 2> /dev/null)
+
+	cd $SOURCE_PATH
+	directories=$(find * -type d)
+	if [ -z '$directories' ] 
+	then
+		echo "[ERROR] No source files to javadoc."
+                echo "--> ROOT: $STRUCTURE_PATH"
+                echo "--> SOURCE: $SOURCE_PATH"
+                echo "--> JAVADOC: $DOC_PATH"
+		return 1
+	else
+                echo "ROOT: $STRUCTURE_PATH"
+                echo " > SOURCE: $SOURCE_PATH"
+                echo " > JAVADOC: $DOC_PATH"
+		echo "Subpackages:"
+		subpackages=$(echo $directories | sed 's/\//./g')
+		echo $subpackages | tr ' ' '\n' | sed 's/^/ > /'
+		echo "Generating JavaDoc..."
+		javadoc -sourcepath $SOURCE_PATH -d $DOC_PATH -subpackages $subpackages	
+		if [ $? -eq 0 ]
+		then
+			return 0
+		else
+			return 1
+		fi
+	fi
+}
+
+# Entry point of the program
+#
+# @params $@ - the command line arguments
+# @returns 0 if the program executed successfully, 1 otherwise
+main() {
+	#Check 0 args passed
+	if [ $# -ne 0 ]
+	then
+		print_usage
+		return 1
+	fi 
+
+	# Check the source directory
+	check_source_path
+	if [ $? -ne 0 ]
+	then
+		return 1
+	fi
+
+	# Check the javadoc directory
+	check_doc_path
+	if [ $? -ne 0 ]
+	then
+		return 1
+	fi
+
+	# Compile the javadoc
+	compile
+	if [ $? -eq 0 ]
+	then
+		return 0
+	else 
+		return 1
+	fi
+}
+
+
+# Start the program
+main $@
+
+# Check if the program ran successfully
+if [ $? -eq 0 ]
+then
+	echo "...Complete!"
+else
+	echo "Errors ocurred. See details above."
+fi

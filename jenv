@@ -78,6 +78,16 @@ main() {
 	
 
 	# Display results
+	
+	# Display Structure results
+	if [ -d $STRUCTURE_PATH ]
+	then
+		echo "[OK] ROOT: '$STRUCTURE_PATH'"
+	else
+		echo "[ERROR] '$STRUCTURE_PATH' is not a valid root directory for a java project."
+		return 1
+	fi
+
 	# Display Classpath results
 	if [ $bin_return -ne 0 ]
 	then
@@ -100,14 +110,6 @@ main() {
 		echo "[OK] SOURCE: '$SOURCE_PATH'"
 	fi
 
-	# Display Summary Results
-	if [ $bin_return -eq 0 ] && [ $src_return -eq 0 ]
-	then
-		echo "[OK] ROOT: '$STRUCTURE_PATH'"
-	else
-		echo "[ERROR] '$STRUCTURE_PATH' is not a valid root directory for a java project."
-		return 1
-	fi
 }
 
 # Start the program
