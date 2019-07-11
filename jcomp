@@ -100,6 +100,8 @@ compile() {
 
 	## Gather any java files within the source directory
 	list=$(find $SOURCE_PATH -name "*.java")
+	libraries=$(find $SOURCE_PATH -name "*.jar")
+	lib_list=$(echo $libraries | tr ' ' ':')
 	
 	if [ -z "$list" ]
 	then
@@ -112,10 +114,12 @@ compile() {
 		echo "ROOT: $STRUCTURE_PATH"
 		echo " > SOURCE: $SOURCE_PATH"
 		echo " > CLASSPATH: $BIN_PATH"
+		echo "Libraries:"
+		echo "$(echo $libraries | tr ' ' '\n' | sed 's/^/ > /')" 
 		echo "Files:"
 		echo "$(echo $list | tr ' ' '\n' | sed 's/^/ > /')"
 		echo "Compiling..."
-		javac -d $BIN_PATH $list 
+		javac -cp $lib_list -d $BIN_PATH $list 
 		if [ $? -eq 0 ] 
 		then
 			return 0
