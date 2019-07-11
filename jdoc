@@ -92,7 +92,8 @@ compile() {
 	STRUCTURE_PATH=$(realpath $CLASSPATH/.. 2> /dev/null)
 	DOC_PATH=$(realpath $CLASSPATH/../doc 2> /dev/null)
 	SOURCE_PATH=$(realpath $CLASSPATH/../src) #2> /dev/null)
-	directories=$(find $SOURCE_PATH/* -type f -name "*.java" | sed 's,/[^/]*$,,' | sort -u | sed 's,^'"$SOURCE_PATH/"',,')
+	directories=$(find $SOURCE_PATH/* -mindepth 1 -type f -name "*.java" | sed 's,/[^/]*$,,' | sort -u | sed 's,^'"$SOURCE_PATH/"',,')
+	default_pkg_files=$(find $SOURCE_PATH/* -maxdepth 0 -type f -name "*.java")
 	if [ -z '$directories' ] 
 	then
 		echo "[ERROR] No source files to javadoc."
@@ -117,7 +118,7 @@ compile() {
 			return 1
 		fi
 		echo "Generating JavaDoc..."
-		javadoc -sourcepath $SOURCE_PATH -d $DOC_PATH -subpackages $subpackages	
+		javadoc -sourcepath $SOURCE_PATH/. -d $DOC_PATH $default_pkg_files -subpackages $subpackages
 		if [ $? -eq 0 ]
 		then
 			return 0
