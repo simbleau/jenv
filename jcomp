@@ -114,12 +114,20 @@ compile() {
 		echo "ROOT: $STRUCTURE_PATH"
 		echo " > SOURCE: $SOURCE_PATH"
 		echo " > CLASSPATH: $BIN_PATH"
-		echo "Libraries:"
-		echo "$(echo $libraries | tr ' ' '\n' | sed 's/^/ > /')" 
+		if [ -n "$lib_list" ]
+		then
+			echo "Libraries:"
+			echo "$(echo $libraries | tr ' ' '\n' | sed 's/^/ > /')" 
+		fi
 		echo "Files:"
 		echo "$(echo $list | tr ' ' '\n' | sed 's/^/ > /')"
 		echo "Compiling..."
-		javac -cp $lib_list -d $BIN_PATH $list 
+		if [ -n "$lib_list" ]
+		then
+			javac -cp $lib_list -d $BIN_PATH $list 
+		else
+			javac -d $BIN_PATH $list 
+		fi
 		if [ $? -eq 0 ] 
 		then
 			return 0
