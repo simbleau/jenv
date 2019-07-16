@@ -28,7 +28,7 @@ check_classpath() {
 	# Check that the classpath is a directory 
 	if [ ! -d $CLASSPATH_PATH ] 
 	then
-		echo "[ERROR] '$CLASSPATH_PATH' is not a valid classpath directory."
+		echo "[ERROR] Your CLASSPATH, '$CLASSPATH_PATH', must exist and be a direcotry ."
 		echo "--> You should initiate jsrc on your source directory."
 		return 1
 	fi
@@ -46,7 +46,7 @@ check_source_path() {
 	# Check that source path exists and is a directory
 	if [ ! -d $SOURCE_PATH ]
 	then
-		echo "[ERROR] '$SOURCE_PATH' is not a valid source directory."
+		echo "[ERROR] Your source directory, '$SOURCE_PATH', must exist and be a directory."
 		echo "--> You should initiate jsrc on your source directory."
 		return 1
 	fi
@@ -92,9 +92,12 @@ compile() {
 	STRUCTURE_PATH=$(realpath $CLASSPATH/.. 2> /dev/null)
 	DOC_PATH=$(realpath $CLASSPATH/../doc 2> /dev/null)
 	SOURCE_PATH=$(realpath $CLASSPATH/../src) #2> /dev/null)
+
+	# Gather needed intel for compilation
 	directories=$(find $SOURCE_PATH/* -mindepth 1 -type f -name "*.java" | sed 's,/[^/]*$,,' | sort -u | sed 's,^'"$SOURCE_PATH/"',,')
 	default_pkg_files=$(find $SOURCE_PATH/* -maxdepth 0 -type f -name "*.java")
-	if [ -z '$directories' ] 
+
+	if [ -z '$directories' ] && [ -z '$default_pkg_files' ]
 	then
 		echo "[ERROR] No source files to javadoc."
                 echo "--> ROOT: $STRUCTURE_PATH"
@@ -105,9 +108,23 @@ compile() {
                 echo "ROOT: $STRUCTURE_PATH"
                 echo " > SOURCE: $SOURCE_PATH"
                 echo " > JAVADOC: $DOC_PATH"
-		echo "Subpackages:"
+		
+		#Gather more intel for compilation 
 		subpackages=$(echo $directories | sed 's/\//./g')
-		echo $subpackages | tr ' ' '\n' | sed 's/^/ > /'
+		libraries=$(find $SOURCE_PATH -name "*.jar")
+		lib_list=$(echo $libraries | tr ' ' ':')
+		if [ -n "$lib_list" ]
+		then
+			echo "Libraries:"
+			echo "$(echo $libraries | tr ' ' '\n' | sed 's/^/ > /')"
+		fi
+		if [ -n "$subpackages" ]
+		then
+			echo "Subpackages:"
+			echo $subpackages | tr ' ' '\n' | sed 's/^/ > /'
+		else
+			echo "Subpackages: None"
+		fi
 		echo "Cleaning JavaDoc..."
 		#rm -rf $DOC_PATH/* 
 		echo "rm -rf $DOC_PATH/*"
@@ -118,7 +135,26 @@ compile() {
 			return 1
 		fi
 		echo "Generating JavaDoc..."
-		javadoc -sourcepath $SOURCE_PATH/. -d $DOC_PATH $default_pkg_files -subpackages $subpackages
+		if [ -n "$subpackages" ]
+		then
+			if [ -n "$lib_list" ]
+			then
+				echo "javadoc -cp $lib_list -sourcepath $SOURCE_PATH/. -d $DOC_PATH $default_pkg_files -subpackages $subpackages"
+				javadoc -cp $lib_list -sourcepath $SOURCE_PATH/. -d $DOC_PATH $default_pkg_files -subpackages $subpackages
+			else
+				echo "javadoc -sourcepath $SOURCE_PATH/. -d $DOC_PATH $default_pkg_files -subpackages $subpackages"
+				javadoc -sourcepath $SOURCE_PATH/. -d $DOC_PATH $default_pkg_files -subpackages $subpackages
+			fi
+		else
+			if [ -n "$lib_list" ]
+			then
+				echo "javadoc -cp $lib_list -sourcepath $SOURCE_PATH/. -d $DOC_PATH $default_pkg_files"
+				javadoc -cp $lib_list -sourcepath $SOURCE_PATH/. -d $DOC_PATH $default_pkg_files
+			else
+				echo "javadoc -sourcepath $SOURCE_PATH/. -d $DOC_PATH $default_pkg_files"
+				javadoc -sourcepath $SOURCE_PATH/. -d $DOC_PATH $default_pkg_files
+			fi
+		fi
 		if [ $? -eq 0 ]
 		then
 			return 0

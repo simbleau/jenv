@@ -121,11 +121,21 @@ compile() {
 		fi
 		echo "Files:"
 		echo "$(echo $list | tr ' ' '\n' | sed 's/^/ > /')"
-		echo "Compiling..."
+		echo "Cleaning bin..."
+		echo "rm -rf $BIN_PATH/*"
+		#rm -rf $BIN_PATH/*
+		if [ $? -ne 0 ]
+		then
+			echo "[ERROR] Could not clean bin directory."
+			echo "--> You may not have sufficient privileges to $BIN_PATH."
+		fi
+		echo "Compiling java byte code..."
 		if [ -n "$lib_list" ]
 		then
+			echo "javac -cp $lib_list -d $BIN_PATH $list"
 			javac -cp $lib_list -d $BIN_PATH $list 
 		else
+			echo "javac -d $BIN_PATH $list"
 			javac -d $BIN_PATH $list 
 		fi
 		if [ $? -eq 0 ] 
