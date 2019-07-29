@@ -20,12 +20,12 @@ print_usage() {
 # @returns 3 if $CLASSPATH is not named bin
 check_bin_path() {
 	# Check if CLASSPATH is empty
-	if [ -z $1 ]
+	if [ -z "$1" ]
 	then
 		return 1
 	fi
 	# Check if CLASSPATH is a directory
-	if [ ! -d $1 ]
+	if [ ! -d "$1" ]
 	then
 		return 2
 	fi
@@ -37,13 +37,13 @@ check_bin_path() {
 	return 0
 }
 
-# Check if a source directory exists
+# Check if a directory exists
 # 
-# @params $1 - the path of a source folder
-# @returns 0 if the source folder exists, 1 otherwise
-check_source_path() {
+# @params $1 - the path of a folder
+# @returns 0 if the folder exists, 1 otherwise
+check_dir_path() {
 	# Check if source path is a directory
-	if [ ! -d $1 ]
+	if [ ! -d "$1" ]
 	then
 		return 1
 	fi
@@ -66,21 +66,24 @@ main() {
 	# --------------------------------
 
 	# Index important locations
-	STRUCTURE_PATH=$(realpath $CLASSPATH/.. 2> /dev/null)
-	SOURCE_PATH=$(realpath $STRUCTURE_PATH/src 2> /dev/null)
-	BIN_PATH=$(realpath $CLASSPATH 2> /dev/null)
+	STRUCTURE_PATH=$(realpath "$CLASSPATH/.." 2> /dev/null)
+	BIN_PATH=$(realpath "$CLASSPATH" 2> /dev/null)
+	SOURCE_PATH=$(realpath "$CLASSPATH/../src" 2> /dev/null)
+	LIB_PATH=$(realpath "$CLASSPATH/../lib" 2> /dev/null)
 	
-	check_bin_path $BIN_PATH
+	check_bin_path "$BIN_PATH"
 	bin_return=$?
 
-	check_source_path $SOURCE_PATH
+	check_dir_path "$SOURCE_PATH"
 	src_return=$?
 	
+	check_dir_path "$LIB_PATH"
+	lib_return=$?
 
 	# Display results
 	
 	# Display Structure results
-	if [ -d $STRUCTURE_PATH ]
+	if [ -d "$STRUCTURE_PATH" ]
 	then
 		echo "[OK] ROOT: '$STRUCTURE_PATH'"
 	else
@@ -88,28 +91,37 @@ main() {
 		return 1
 	fi
 
-	# Display Classpath results
-	if [ $bin_return -ne 0 ]
-	then
-		echo "[ERROR] CLASSPATH: '$CLASSPATH'"
-		if [ $bin_return -eq 1 ]; then echo "--> CLASSPATH is not set."; fi
-		if [ $bin_return -eq 2 ]; then echo "--> CLASSPATH is not a directory."; fi
-		if [ $bin_return -eq 3 ]; then echo "--> CLASSPATH is not named 'bin' conventionally."; fi
-		return 1
-	else
-		echo "[OK] CLASSPATH: '$CLASSPATH'"
-	fi
-
 	# Display Source results
-	if [ $src_return -ne 0 ]
+	if [ "$src_return" -ne 0 ]
 	then
 		echo "[ERROR] SOURCE: '$SOURCE_PATH'"
-		if [ $src_return -eq 1 ]; then echo "--> source folder does not exist."; fi
+		if [ "$src_return" -eq 1 ]; then echo "--> source folder does not exist."; fi
 		return 1
 	else
 		echo "[OK] SOURCE: '$SOURCE_PATH'"
 	fi
 
+	# Display Library directory results
+	if [ "$lib_return" -ne 0 ]
+	then
+		echo "[WARN] LIBRARIES: '$LIB_PATH'"
+		if [ "$lib_return" -eq 1 ]; then echo "--> library folder does not exist."; fi
+		return 1
+	else
+		echo "[OK] LIBRARIES: '$LIB_PATH'"
+	fi
+	
+	# Display Classpath results
+	if [ "$bin_return" -ne 0 ]
+	then
+		echo "[ERROR] CLASSPATH: '$CLASSPATH'"
+		if [ "$bin_return" -eq 1 ]; then echo "--> CLASSPATH is not set."; fi
+		if [ "$bin_return" -eq 2 ]; then echo "--> CLASSPATH is not a directory."; fi
+		if [ "$bin_return" -eq 3 ]; then echo "--> CLASSPATH is not named 'bin' conventionally."; fi
+		return 1
+	else
+		echo "[OK] CLASSPATH: '$CLASSPATH'"
+	fi
 }
 
 # Start the program

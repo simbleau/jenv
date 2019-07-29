@@ -16,17 +16,17 @@ print_usage() {
 # @returns 0 if $CLASSPATH was set and exists conventionally, 1 otherwise
 check_classpath() {
 	# Check if classpath was set
-	if [ -z '$CLASSPATH' ]
+	if [ -z "$CLASSPATH" ]
 	then
 		echo "[ERROR] CLASSPATH is null."
 		echo "--> You should initiate jsrc on your source directory."
 		return 1
 	fi
 
-	CLASSPATH_PATH=$(realpath $CLASSPATH 2> /dev/null)
+	CLASSPATH_PATH=$(realpath "$CLASSPATH" 2> /dev/null)
 
 	# Check that the classpath is a directory 
-	if [ ! -d $CLASSPATH_PATH ] 
+	if [ ! -d "$CLASSPATH_PATH" ] 
 	then
 		echo "[ERROR] Your CLASSPATH, '$CLASSPATH_PATH', must exist and be a direcotry ."
 		echo "--> You should initiate jsrc on your source directory."
@@ -41,10 +41,10 @@ check_classpath() {
 #
 # @returns 0 if the conventional source directory exists, 1 otherwise
 check_source_path() {
-	SOURCE_PATH=$(realpath $CLASSPATH/../src 2> /dev/null)
+	SOURCE_PATH=$(realpath "$CLASSPATH/../src" 2> /dev/null)
 	
 	# Check that source path exists and is a directory
-	if [ ! -d $SOURCE_PATH ]
+	if [ ! -d "$SOURCE_PATH" ]
 	then
 		echo "[ERROR] Your source directory, '$SOURCE_PATH', must exist and be a directory."
 		echo "--> You should initiate jsrc on your source directory."
@@ -58,18 +58,18 @@ check_source_path() {
 #
 # @returns 0 if the conventional javadoc directory exists, 1 otherwise
 check_doc_path() {
-	DOC_PATH=$(realpath $CLASSPATH/../doc 2> /dev/null)
+	DOC_PATH=$(realpath "$CLASSPATH/../doc" 2> /dev/null)
 
 	# Check that doc is a directory
-	if [ ! -d $DOC_PATH ]
+	if [ ! -d "$DOC_PATH" ]
 	then
 		echo -n "$DOC_PATH does not exist. Create it now? (y/N) > "
 		#Create
 		read -n1 input
 		echo ""
-		if [ $input == "y" ] || [ $input == "Y" ]
+		if [ "$input" == "y" ] || [ "$input" == "Y" ]
 		then
-			mkdir $DOC_PATH 2> /dev/null
+			mkdir "$DOC_PATH" 2> /dev/null
 			if [ $? -ne 0 ]
 			then
 				echo "[ERROR] Could not create $DOC_PATH."
@@ -89,13 +89,14 @@ check_doc_path() {
 #
 # @returns 0 if the conventional javadoc directory exists, 1 otherwise
 compile() {
-	STRUCTURE_PATH=$(realpath $CLASSPATH/.. 2> /dev/null)
-	DOC_PATH=$(realpath $CLASSPATH/../doc 2> /dev/null)
-	SOURCE_PATH=$(realpath $CLASSPATH/../src) #2> /dev/null)
+	STRUCTURE_PATH=$(realpath "$CLASSPATH/.." 2> /dev/null)
+	DOC_PATH=$(realpath "$CLASSPATH/../doc" 2> /dev/null)
+	SOURCE_PATH=$(realpath "$CLASSPATH/../src" 2> /dev/null)
+	LIB_PATH=$(realpath "$CLASSPATH/../lib" 2> /dev/null)
 
 	# Gather needed intel for compilation
-	directories=$(find $SOURCE_PATH/* -mindepth 1 -type f -name "*.java" | sed 's,/[^/]*$,,' | sort -u | sed 's,^'"$SOURCE_PATH/"',,')
-	default_pkg_files=$(find $SOURCE_PATH/* -maxdepth 0 -type f -name "*.java")
+	directories=$(find "$SOURCE_PATH" -mindepth 2 -type f -name "*.java" | sed 's,/[^/]*$,,' | sort -u | sed 's,^'"$SOURCE_PATH/"',,')
+	default_pkg_files=$(find "$SOURCE_PATH" -maxdepth 1 -type f -name "*.java")
 
 	if [ -z '$directories' ] && [ -z '$default_pkg_files' ]
 	then
@@ -110,18 +111,24 @@ compile() {
                 echo " > JAVADOC: $DOC_PATH"
 		
 		#Gather more intel for compilation 
-		subpackages=$(echo $directories | sed 's/\//./g')
-		libraries=$(find $SOURCE_PATH -name "*.jar")
-		lib_list=$(echo $libraries | tr ' ' ':')
-		if [ -n "$lib_list" ]
+		subpackages=$(echo "$directories" | sed 's/\//./g')
+		if [ -d "$LIB_PATH" ]
 		then
-			echo "Libraries:"
-			echo "$(echo $libraries | tr ' ' '\n' | sed 's/^/ > /')"
+			libraries=$(find "$LIB_PATH" -name "*.jar")
+			if [ -n "$libraries" ]
+			then
+				lib_list=$(echo $libraries | tr ' ' ':')
+				if [ -n "$lib_list" ]
+				then
+					echo "Libraries:"
+					echo "$(echo "$libraries" | tr ' ' '\n' | sed 's/^/ > /')"
+				fi
+			fi
 		fi
 		if [ -n "$subpackages" ]
 		then
 			echo "Subpackages:"
-			echo $subpackages | tr ' ' '\n' | sed 's/^/ > /'
+			echo "$subpackages" | tr ' ' '\n' | sed 's/^/ > /'
 		else
 			echo "Subpackages: None"
 		fi
@@ -137,22 +144,22 @@ compile() {
 		echo "Generating JavaDoc..."
 		if [ -n "$subpackages" ]
 		then
-			if [ -n "$lib_list" ]
+			if [ -d "$LIB_PATH" ] && [ -n "$lib_list" ]
 			then
 				echo "javadoc -cp $lib_list -sourcepath $SOURCE_PATH/. -d $DOC_PATH $default_pkg_files -subpackages $subpackages"
-				javadoc -cp $lib_list -sourcepath $SOURCE_PATH/. -d $DOC_PATH $default_pkg_files -subpackages $subpackages
+				javadoc -cp "$lib_list" -sourcepath "$SOURCE_PATH/." -d "$DOC_PATH" $default_pkg_files -subpackages $subpackages
 			else
 				echo "javadoc -sourcepath $SOURCE_PATH/. -d $DOC_PATH $default_pkg_files -subpackages $subpackages"
-				javadoc -sourcepath $SOURCE_PATH/. -d $DOC_PATH $default_pkg_files -subpackages $subpackages
+				javadoc -sourcepath "$SOURCE_PATH/." -d "$DOC_PATH" $default_pkg_files -subpackages $subpackages
 			fi
 		else
-			if [ -n "$lib_list" ]
+			if [ -d "$LIB_PATH" ] && [ -n "$lib_list" ]
 			then
 				echo "javadoc -cp $lib_list -sourcepath $SOURCE_PATH/. -d $DOC_PATH $default_pkg_files"
-				javadoc -cp $lib_list -sourcepath $SOURCE_PATH/. -d $DOC_PATH $default_pkg_files
+				javadoc -cp "$lib_list" -sourcepath "$SOURCE_PATH/." -d "$DOC_PATH" $default_pkg_files
 			else
 				echo "javadoc -sourcepath $SOURCE_PATH/. -d $DOC_PATH $default_pkg_files"
-				javadoc -sourcepath $SOURCE_PATH/. -d $DOC_PATH $default_pkg_files
+				javadoc -sourcepath "$SOURCE_PATH/." -d "$DOC_PATH" $default_pkg_files
 			fi
 		fi
 		if [ $? -eq 0 ]

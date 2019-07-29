@@ -2,7 +2,7 @@
 
 ## Ensure that proper conventions are setup, i.e. that the user has
 ## a valid source folder (named 'src') and a binary folder (named 'bin')
-## which can be used to set the classpath.
+## a valid library folder (named 'lib') which can be used to set the classpath.
 ##
 ## @author Spencer Imbleau
 ## @version July 2019
@@ -19,7 +19,7 @@ print_usage() {
 # @returns 0 if the source path exists, 1 otherwise
 check_source_path() {
 	#Check if source path is a directory 
-	if [ ! -d $1 ]
+	if [ ! -d "$1" ]
 	then
 		print_usage
 		echo "[ERROR] $1 is not a directory."
@@ -36,25 +36,25 @@ check_source_path() {
 	return 0
 }
 
-# Checks for the bin path
+# Checks for the directory path
 #
-# @params $1 - the bin path to check	
-# @returns 0 if the bin path exists, 1 otherwise
-check_bin_path() {
-	# Check if bin path does not exist
-	if [ ! -d $BIN_PATH ]
+# @params $1 - the path to check	
+# @returns 0 if the path exists, 1 otherwise
+check_dir_path() {
+	# Check if path does not exist
+	if [ ! -d "$1" ]
 	then
-		echo -n "$BIN_PATH does not exist. Create it now? (y/N) > "
+		echo -n "$1 does not exist. Create it now? (y/N) > "
 	
 		#Create bin directory on request
 		read -n1 input
 		echo ""
-		if [ $input == "y" ] || [ $input == "Y" ]
+		if [ "$input" == "y" ] || [ "$input" == "Y" ]
 		then
-			mkdir $BIN_PATH 2> /dev/null
+			mkdir "$1" 2> /dev/null
 			if [ $? -ne 0 ] # Check for mkdir success
 			then
-				echo "[ERROR] Could not create $BIN_PATH."
+				echo "[ERROR] Could not create $1."
 				return 1
 			fi
 		else
@@ -102,32 +102,39 @@ main() {
 	# --------------------------------
 
 	# Index environment locations
-	if [ "$#" -eq 0 ] # Check if a source path was passed
+	if [ $# -eq 0 ] # Check if a source path was passed
 	then # No arguments were passed
 		SOURCE_PATH=$(realpath . 2> /dev/null)
 	else # 1 argument
-		SOURCE_PATH=$(realpath $1 2> /dev/null)
+		SOURCE_PATH=$(realpath "$1" 2> /dev/null)
 	fi
-	STRUCTURE_PATH=$(realpath ${SOURCE_PATH}/.. 2> /dev/null)
-	BIN_PATH=$(realpath ${SOURCE_PATH}/../bin 2> /dev/null)
+
+	STRUCTURE_PATH=$(realpath "$SOURCE_PATH/.." 2> /dev/null)
+	BIN_PATH=$(realpath "$SOURCE_PATH/../bin" 2> /dev/null)
+	LIB_PATH=$(realpath "$SOURCE_PATH/../lib" 2> /dev/null)
 	
 	# Check for a valid source path
-	check_source_path $SOURCE_PATH
-       	src_exists=$?
-	if [ $src_exists -ne 0 ]
+	check_source_path "$SOURCE_PATH"
+	if [ $? -ne 0 ]
 	then
 		return 1
 	fi
 
 	# Check for a valid bin path
-	check_bin_path $BIN_PATH
-	bin_exists=$? 
-	if [ $bin_exists -ne 0 ]
+	check_dir_path "$BIN_PATH"
+	if [ $? -ne 0 ]
 	then
 		return 1
 	fi
 
-	export CLASSPATH=$BIN_PATH
+	# Check for a valid bin path
+	check_dir_path "$LIB_PATH"
+	if [ $? -ne 0 ]
+	then
+		return 1
+	fi
+
+	export CLASSPATH="$BIN_PATH"
 	return 0
 } 
 
@@ -139,6 +146,7 @@ if [ $? -eq 0 ]
 then
 	echo "ROOT: $STRUCTURE_PATH"
 	echo "SOURCE: $SOURCE_PATH"
+	echo "LIBRARIES: $LIB_PATH"
 	echo "CLASSPATH: $CLASSPATH"
 	echo "...Complete!"
 else

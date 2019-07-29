@@ -16,17 +16,17 @@ print_usage() {
 # @returns 0 if $CLASSPATH was set and exists conventionally, 1 otherwise
 check_bin_path() {
 	# Check if classpath was set
-	if [ -z '$CLASSPATH' ]
+	if [ -z "$CLASSPATH" ]
 	then
 		echo "[ERROR] CLASSPATH is null."
 		echo "--> You should initiate jsrc on your source directory."
 		return 1
 	fi
 	
-	BIN_PATH=$(realpath $CLASSPATH 2> /dev/null)
+	BIN_PATH=$(realpath "$CLASSPATH" 2> /dev/null)
 	
 	# Check that our classpath is named 'bin'
-	if [ ! ${BIN_PATH: -4} == "/bin" ]
+	if [ ! "${BIN_PATH: -4}" == "/bin" ]
 	then
 		echo "[ERROR] Your CLASSPATH, '$BIN_PATH', must be a folder named bin."
 		echo "--> You should initiate jsrc on your source directory."
@@ -34,15 +34,15 @@ check_bin_path() {
 	fi
 
 	# Check that the classpath is a directory 
-	if [ ! -d $BIN_PATH ] 
+	if [ ! -d "$BIN_PATH" ] 
 	then
 		echo -n "$BIN_PATH does not exist. Create it now? (y/N) > "
 		# Create 
 		read -n1 input
 		echo ""
-		if [ $input == "y" ] || [ $input == "Y" ]
+		if [ "$input" == "y" ] || [ "$input" == "Y" ]
 		then
-			mkdir $BIN_PATH 2> /dev/null
+			mkdir "$BIN_PATH" 2> /dev/null
 			if [ $? -ne 0 ]
 			then
 				echo "[ERROR] Could not create $BIN_PATH."
@@ -63,17 +63,17 @@ check_bin_path() {
 #
 # @returns 0 if the conventional source directory exists, 1 otherwise
 check_source_path() {
-	SOURCE_PATH=$(realpath $CLASSPATH/../src 2> /dev/null)
+	SOURCE_PATH=$(realpath "$CLASSPATH/../src" 2> /dev/null)
 	# Check there exists a /src/ directory to compile java files from
-	if [ ! -d $SOURCE_PATH ]
+	if [ ! -d "$SOURCE_PATH" ]
 	then
 		# Ask user to create 
 		echo -n "$SOURCE_PATH does not exist. Create it now? (y/N) > "
 		read -n1 input
 		echo ""
-		if [ $input == "y" ] || [ $input == "Y" ]
+		if [ "$input" == "y" ] || [ "$input" == "Y" ]
 		then
-			mkdir $SOURCE_PATH 2> /dev/null
+			mkdir "$SOURCE_PATH" 2> /dev/null
 			if [ $? -ne 0 ]
 			then
 				echo "[ERROR] Could not create $SOURCE_PATH."
@@ -94,14 +94,21 @@ check_source_path() {
 #
 # @returns 0 if successful, 1 otherwise
 compile() {
-	STRUCTURE_PATH=$(realpath $CLASSPATH/.. 2> /dev/null)
-	SOURCE_PATH=$(realpath $CLASSPATH/../src 2> /dev/null)
-	BIN_PATH=$(realpath $CLASSPATH 2> /dev/null)
+	STRUCTURE_PATH=$(realpath "$CLASSPATH/.." 2> /dev/null)
+	SOURCE_PATH=$(realpath "$CLASSPATH/../src" 2> /dev/null)
+	BIN_PATH=$(realpath "$CLASSPATH" 2> /dev/null)
+	LIB_PATH=$(realpath "$CLASSPATH/../lib" 2> /dev/null)
 
 	## Gather any java files within the source directory
-	list=$(find $SOURCE_PATH -name "*.java")
-	libraries=$(find $SOURCE_PATH -name "*.jar")
-	lib_list=$(echo $libraries | tr ' ' ':')
+	list=$(find "$SOURCE_PATH" -name "*.java")
+	if [ -d "$LIB_PATH" ]
+	then
+		libraries=$(find $LIB_PATH -name "*.jar")
+		if [ -n "$libraries" ]
+		then
+			lib_list=$(echo $libraries | tr ' ' ':')
+		fi
+	fi
 	
 	if [ -z "$list" ]
 	then
@@ -111,32 +118,32 @@ compile() {
 		echo "--> CLASSPATH: $BIN_PATH"
 		return 1
 	else 
-		echo "ROOT: $STRUCTURE_PATH"
+		echo "Project: $STRUCTURE_PATH"
 		echo " > SOURCE: $SOURCE_PATH"
 		echo " > CLASSPATH: $BIN_PATH"
-		if [ -n "$lib_list" ]
+		if [ -d "$LIB_PATH" ] && [ -n "$lib_list" ]
 		then
 			echo "Libraries:"
-			echo "$(echo $libraries | tr ' ' '\n' | sed 's/^/ > /')" 
+			echo "$(echo "$libraries" | tr ' ' '\n' | sed 's/^/ > /')" 
 		fi
 		echo "Files:"
-		echo "$(echo $list | tr ' ' '\n' | sed 's/^/ > /')"
+		echo "$(echo "$list" | tr ' ' '\n' | sed 's/^/ > /')"
 		echo "Cleaning bin..."
 		echo "rm -rf $BIN_PATH/*"
-		#rm -rf $BIN_PATH/*
+		#rm -rf "$BIN_PATH/*"
 		if [ $? -ne 0 ]
 		then
 			echo "[ERROR] Could not clean bin directory."
 			echo "--> You may not have sufficient privileges to $BIN_PATH."
 		fi
 		echo "Compiling java byte code..."
-		if [ -n "$lib_list" ]
+		if [ -d "$LIB_PATH" ] && [ -n "$lib_list" ]
 		then
 			echo "javac -cp $lib_list -d $BIN_PATH $list"
-			javac -cp $lib_list -d $BIN_PATH $list 
+			javac -cp "$lib_list" -d "$BIN_PATH" $list
 		else
 			echo "javac -d $BIN_PATH $list"
-			javac -d $BIN_PATH $list 
+			javac -d "$BIN_PATH" $list
 		fi
 		if [ $? -eq 0 ] 
 		then
